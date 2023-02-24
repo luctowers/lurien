@@ -4,6 +4,8 @@ import json
 import tkinter as tk
 from tkinter import scrolledtext
 
+# TODO: make sure there is a way to disable the client from the server
+
 def launch_steam_game(id):
     # TODO: MAKE THIS MULTIPLATFORM
     subprocess.call("C:\\Program Files (x86)\\Steam\\\Steam.exe -applaunch %s" % id)
