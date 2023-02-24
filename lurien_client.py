@@ -1,13 +1,16 @@
 import os
 import platform
 import subprocess
+import shutil
 import json
 import uuid
 import re
+from datetime import datetime
 import tkinter as tk
 from tkinter import scrolledtext
 
 # TODO: make sure there is a way to disable the client from the server
+# TODO: make sure nested dat is handled correctly
 
 class UnsupportedPlatformException(Exception):
     def __init__(self):            
@@ -17,6 +20,11 @@ ALL_SAVE_PATTERN = re.compile(r".*\.dat")
 VERSIONED_SAVE_PATTERN = re.compile(r".*_[0-9]*\.[0-9]*(\.[0-9]*)*\.dat")
 def is_regular_save_file(filename):
     return ALL_SAVE_PATTERN.fullmatch(filename) and not VERSIONED_SAVE_PATTERN.fullmatch(filename)
+
+def staged_save_file_name(save, mod_time):
+    savename = os.path.basename(save)[:-4]
+    timestamp = datetime.utcfromtimestamp(mod_time).strftime("%Y-%m-%d--%H-%M-%S")
+    return "%s--%s.dat" % (savename, timestamp)
 
 def launch_steam_game(id):
     # TODO: MAKE THIS MULTIPLATFORM
@@ -62,6 +70,11 @@ def ensure_lurien_persist_dir():
     save_dir = os.path.expanduser(save_dir)
     os.makedirs(save_dir, exist_ok=True)
     return save_dir
+
+def ensure_lurien_staging_dir():
+    staging_dir = os.path.join(ensure_lurien_persist_dir(), "staging")
+    os.makedirs(staging_dir, exist_ok=True)
+    return staging_dir
 
 def get_lurien_persist_file():
     save_dir = ensure_lurien_persist_dir()
@@ -115,22 +128,28 @@ class LurienApp(tk.Frame):
     def watch(self, first_watch=False):
         persist_updated = False
         for save in locate_saves(locate_hollow_knight_save_dir()):
-            mod_time = os.path.getmtime(save)
+            mod_time = int(os.path.getmtime(save))
             if save in self.persist["saves"]:
                 persist_mod_time = self.persist["saves"][save]["mtime"]
                 if persist_mod_time < mod_time:
-                    self.log("CHANGED " + save)
+                    self.stage(save, mod_time)
                 if persist_mod_time != mod_time:
                     persist_updated = True
             else:
                 persist_updated = True    
                 self.persist["saves"][save] = {}
                 if not first_watch:
-                    self.log("NEW " + save)
+                    self.stage(save, mod_time)
             self.persist["saves"][save]["mtime"] = mod_time
         if persist_updated:
             self.save_persist()
         self.after(1000, self.watch)
+    
+    def stage(self, save, mod_time):
+        stagename = staged_save_file_name(save, mod_time)
+        stagedir = ensure_lurien_staging_dir()
+        stagesave = os.path.join(stagedir, stagename)
+        shutil.copyfile(save, stagesave)
 
     def log(self, text):
         self.log_text.configure(state="normal")
