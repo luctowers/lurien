@@ -1,8 +1,10 @@
+import os
 import subprocess
 import tkinter as tk
 from tkinter import scrolledtext
 
 def launch_steam_game(id):
+    # TODO: MAKE THIS MULTIPLATFORM
     subprocess.call("C:\\Program Files (x86)\\Steam\\\Steam.exe -applaunch %s" % id)
 
 def launch_hollow_knight():
@@ -10,6 +12,16 @@ def launch_hollow_knight():
 
 def launch_silksong():
     launch_steam_game("1030300")
+
+def determine_hollow_knight_save_location():
+    # TODO: MAKE THIS MULTIPLATFORM https://store.steampowered.com/news/app/367520/view/3406429723545099871
+    return os.path.join(os.environ["USERPROFILE"], "AppData\\LocalLow\\Team Cherry\\Hollow Knight")
+
+def locate_saves(game_dir):
+    for root, dirs, files in os.walk(game_dir, topdown=False):
+        for name in files:
+            if name.endswith(".dat"):
+                yield os.path.join(root, name)
 
 class LurienApp(tk.Frame):
 
