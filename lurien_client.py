@@ -3,6 +3,7 @@ import platform
 import subprocess
 import json
 import uuid
+import re
 import tkinter as tk
 from tkinter import scrolledtext
 
@@ -11,6 +12,11 @@ from tkinter import scrolledtext
 class UnsupportedPlatformException(Exception):
     def __init__(self):            
         super().__init__("unsupported platform '%s'" % platform.system())
+
+ALL_SAVE_PATTERN = re.compile(r".*\.dat")
+VERSIONED_SAVE_PATTERN = re.compile(r".*_[0-9]*\.[0-9]*(\.[0-9]*)*\.dat")
+def is_regular_save_file(filename):
+    return ALL_SAVE_PATTERN.fullmatch(filename) and not VERSIONED_SAVE_PATTERN.fullmatch(filename)
 
 def launch_steam_game(id):
     # TODO: MAKE THIS MULTIPLATFORM
@@ -42,7 +48,7 @@ def locate_saves(save_dir):
     # TODO: MAKE SURE THIS DOESN'T FAIL WHEN SAVE DIR DOESN'T EXIST
     for root, dirs, files in os.walk(save_dir, topdown=False):
         for name in files:
-            if name.endswith(".dat"):
+            if is_regular_save_file(name):
                 yield os.path.join(root, name)
 
 def ensure_lurien_persist_dir():
@@ -99,8 +105,8 @@ class LurienApp(tk.Frame):
         self.persist = get_lurien_persist()
         if self.persist is None:
             self.persist = {}
-            self.persist["saves"] = {}
             self.persist["clientId"] = str(uuid.uuid4())
+            self.persist["saves"] = {}
             self.save_persist()
     
     def save_persist(self):
@@ -113,14 +119,14 @@ class LurienApp(tk.Frame):
             if save in self.persist["saves"]:
                 persist_mod_time = self.persist["saves"][save]["mtime"]
                 if persist_mod_time < mod_time:
-                    print("CHANGED " + save)
+                    self.log("CHANGED " + save)
                 if persist_mod_time != mod_time:
                     persist_updated = True
             else:
                 persist_updated = True    
                 self.persist["saves"][save] = {}
                 if not first_watch:
-                    print("NEW " + save)
+                    self.log("NEW " + save)
             self.persist["saves"][save]["mtime"] = mod_time
         if persist_updated:
             self.save_persist()
