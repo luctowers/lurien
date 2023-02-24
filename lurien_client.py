@@ -1,5 +1,6 @@
 import os
 import subprocess
+import json
 import tkinter as tk
 from tkinter import scrolledtext
 
@@ -13,15 +14,37 @@ def launch_hollow_knight():
 def launch_silksong():
     launch_steam_game("1030300")
 
-def determine_hollow_knight_save_location():
+def locate_hollow_knight_save_dir():
     # TODO: MAKE THIS MULTIPLATFORM https://store.steampowered.com/news/app/367520/view/3406429723545099871
     return os.path.join(os.environ["USERPROFILE"], "AppData\\LocalLow\\Team Cherry\\Hollow Knight")
 
-def locate_saves(game_dir):
-    for root, dirs, files in os.walk(game_dir, topdown=False):
+def locate_saves(save_dir):
+    # TODO: MAKE SURE THIS DOESN'T FAIL WHEN SAVE DIR DOESN'T EXIST
+    for root, dirs, files in os.walk(save_dir, topdown=False):
         for name in files:
             if name.endswith(".dat"):
                 yield os.path.join(root, name)
+
+def ensure_lurien_save_dir():
+    # TODO: MAKE THIS MULTIPLATFORM
+    save_dir = os.path.join(os.environ["USERPROFILE"], "AppData\\LocalLow\\Lurien")
+    os.makedirs(save_dir, exist_ok=True)
+    return save_dir
+
+def get_lurien_save_file():
+    save_dir = ensure_lurien_save_dir()
+    return os.path.join(save_dir, "lurien.json")
+
+def save_lurien_data(data):
+    with open(get_lurien_save_file(), "w") as file:
+        json.dump(data, file)
+
+def get_lurien_data():
+    try:
+        with open(get_lurien_save_file(), "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return None
 
 class LurienApp(tk.Frame):
 
@@ -58,6 +81,8 @@ def main():
     app = LurienApp(root)
     app.pack()
     root.mainloop()
+    # print(get_lurien_data())
+    # save_lurien_data({"id":"123"})
 
 if __name__ == "__main__":
     main()
