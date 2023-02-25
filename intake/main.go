@@ -10,7 +10,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-const HttpDebug = true
+const HttpDebug = true // TODO: this should not be true in production
 
 func main() {
 	logger, err := zap.NewDevelopment()
