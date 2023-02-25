@@ -49,7 +49,7 @@ def locate_hollow_knight_save_dir():
     # TODO: MAKE THIS MULTIPLATFORM https://store.steampowered.com/news/app/367520/view/3406429723545099871
     if platform.system() == "Windows":
         save_dir = "~\\AppData\\LocalLow\\Team Cherry\\Hollow Knight"
-    if platform.system() == "Darwin":
+    elif platform.system() == "Darwin":
         save_dir = "~/Library/Application Support/unity.Team Cherry.Hollow Knight"
     else:
         raise UnsupportedPlatformException()
@@ -67,7 +67,7 @@ def ensure_lurien_persist_dir():
     # TODO: MAKE THIS MULTIPLATFORM
     if platform.system() == "Windows":
         save_dir = "~\\AppData\\LocalLow\\Lurien"
-    if platform.system() == "Darwin":
+    elif platform.system() == "Darwin":
         save_dir = "~/Library/Application Support/net.lurien"
     else:
         raise UnsupportedPlatformException()
