@@ -17,14 +17,14 @@ func LoggingMiddleware(handler Handler) Handler {
 func (h LoggingHandler) Handle(i Input) (int, error) {
 	// add useful fields to logger
 	i.Logger = i.Logger.With(
-		zap.Int64("request_id", rand.Int63()), // random identifier
+		zap.Int64("requestId", rand.Int63()), // random identifier
 		zap.String("method", i.Request.Method),
 		zap.String("url", i.Request.URL.String()),
 	)
 
 	// handle the request
 	i.Logger.Debug("request received")
-	status, err := h.Handle(i)
+	status, err := h.handler.Handle(i)
 	logger := i.Logger.With(zap.Int("status", status))
 	logger.Debug("request processed")
 

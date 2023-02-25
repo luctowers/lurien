@@ -63,9 +63,9 @@ func defaultHandlerResponse(w http.ResponseWriter, status int, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	resbody := defaultResponseBody{
-		Status:  status,
-		Message: http.StatusText(status),
-		Error:   err,
+		Status:     status,
+		StatusText: http.StatusText(status),
+		Error:      err.Error(),
 	}
 	json.NewEncoder(w).Encode(resbody)
 }
@@ -103,7 +103,7 @@ func (w *responseWriterCapture) WriteHeader(status int) {
 }
 
 type defaultResponseBody struct {
-	Status  int    `json:"status"`
-	Message string `json:"message"`
-	Error   error  `json:"error,omitempty"`
+	Status     int    `json:"status"`
+	StatusText string `json:"statusText"`
+	Error      string `json:"error,omitempty"`
 }
