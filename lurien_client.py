@@ -11,6 +11,7 @@ from tkinter import scrolledtext
 
 # TODO: make sure there is a way to disable the client from the server
 # TODO: make sure nested dat is handled correctly
+# TODO: improve robustness of staging
 
 class UnsupportedPlatformException(Exception):
     def __init__(self):            
