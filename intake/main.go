@@ -32,14 +32,15 @@ func main() {
 	http.Handle("/", router)
 	err = http.ListenAndServe(":8080", nil)
 	if err != nil {
-		logger.Fatal("failed to listed on port", zap.Error(err))
+		logger.Fatal("failed to listen on port", zap.Error(err))
 	}
 }
 
 func Intake() handler.Handler {
 	return &intakeHandler{
 		// save format: name---ts.ext
-		saveExpr:     regexp.MustCompile(`(.*)---([0-9]{4}-[0-9]{2}-[0-9]{2}--[0-9]{2}-[0-9]{2}-[0-9]{2})\.(.*)`),
+		saveExpr: regexp.MustCompile(`(.*)---([0-9]{4}-[0-9]{2}-[0-9]{2}--[0-9]{2}-[0-9]{2}-[0-9]{2})\.(.*)`),
+		// ts layout: yyyy-mm-dd--hh-MM-ss
 		saveTsLayout: "2006-01-02--15-04-05",
 	}
 }
