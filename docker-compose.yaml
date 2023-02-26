@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+
   intake:
     build:
       context: .
@@ -16,6 +17,7 @@ services:
       - S3_ENDPOINT=http://minio:9000
       - S3_KEY=dummyminiouser
       - S3_SECRET=dummyminiopassword
+      
   minio:
     image: minio/minio
     ports:
