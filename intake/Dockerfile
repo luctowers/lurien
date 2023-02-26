@@ -9,8 +9,6 @@ COPY common ./common
 COPY go.work .
 COPY go.work.sum .
 
-RUN ls
-
 ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
 RUN go build -o /go/bin/intake github.com/luctowers/lurien/intake
