@@ -1,4 +1,4 @@
-FROM golang:1.20-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.20-alpine AS builder
 
 RUN apk update && apk add --no-cache git
 
@@ -11,6 +11,8 @@ COPY go.work.sum .
 
 RUN ls
 
+ENV GOOS=${TARGETOS}
+ENV GOARCH=${TARGETARCH}
 RUN go build -o /go/bin/intake github.com/luctowers/lurien/intake
 
 FROM scratch
