@@ -67,8 +67,8 @@ func (h *intakeHandler) Handle(i handler.Input) (int, error) {
 
 	saveMatch := h.saveExpr.FindStringSubmatch(save)
 	if saveMatch == nil {
-		i.Logger.Warn("invalid save format", zap.String("save", save))
-		return http.StatusBadRequest, errors.New("invalid save format")
+		i.Logger.Warn("invalid save path format", zap.String("save", save))
+		return http.StatusBadRequest, errors.New("invalid save path format")
 	}
 	// saveName := saveMatch[1]
 	saveTs := saveMatch[2]
