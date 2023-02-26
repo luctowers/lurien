@@ -1,4 +1,5 @@
 name: Build Intake Container
+on:
   push:
     tags:
       - '*'
