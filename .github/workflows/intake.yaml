@@ -1,4 +1,4 @@
-name: Build Intake Container
+name: Build and Push Intake Image
 on:
   push:
     tags:
