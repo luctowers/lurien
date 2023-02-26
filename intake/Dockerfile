@@ -18,7 +18,7 @@ COPY go.work go.work.sum ./
 
 ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
-RUN go build -o /go/bin/intake github.com/luctowers/lurien/intake
+RUN go build -ldflags="-w -s" -o /go/bin/intake github.com/luctowers/lurien/intake
 
 FROM scratch
 
