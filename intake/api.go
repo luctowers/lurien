@@ -1,18 +1,22 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"regexp"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
 	"github.com/luctowers/lurien/common"
 	"go.uber.org/zap"
 )
 
-func Intake() common.Handler {
+func Intake(s3c *s3.Client, s3bucket string) common.Handler {
 	return &intakeHandler{
+		s3c:      s3c,
+		s3bucket: s3bucket,
 		// save format: name---ts.ext
 		saveExpr: regexp.MustCompile(`(.*)---([0-9]{4}-[0-9]{2}-[0-9]{2}--[0-9]{2}-[0-9]{2}-[0-9]{2})\.(.*)`),
 		// ts layout: yyyy-mm-dd--hh-MM-ss
@@ -21,6 +25,8 @@ func Intake() common.Handler {
 }
 
 type intakeHandler struct {
+	s3c          *s3.Client
+	s3bucket     string
 	saveExpr     *regexp.Regexp
 	saveTsLayout string
 }
@@ -58,6 +64,15 @@ func (h *intakeHandler) Handle(i common.Input) (int, error) {
 	if saveExt != "dat" {
 		i.Logger.Warn("unrecognized save extension", zap.String("save", save), zap.String("saveExt", saveExt))
 		return http.StatusBadRequest, errors.New("unrecognized save extension")
+	}
+
+	result, err := h.s3c.ListBuckets(context.TODO(), &s3.ListBucketsInput{})
+	if err != nil {
+		return http.StatusInternalServerError, err
+	}
+	i.Logger.Info("listing buckets")
+	for _, bucket := range result.Buckets {
+		i.Logger.Info(*bucket.Name)
 	}
 
 	return http.StatusOK, nil

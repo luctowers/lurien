@@ -23,6 +23,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	s3c, err := common.NewS3(&cfg.S3Config)
+	if err != nil {
+		logger.Fatal("failed to configure s3 service", zap.Error(err))
+	}
+
 	w := func(h common.Handler) httprouter.Handle {
 		h = common.LoggingMiddleware(h)
 		h = common.StatusMiddleware(h, cfg.HTTPDebug)
@@ -30,7 +35,7 @@ func main() {
 	}
 
 	router := httprouter.New()
-	router.PUT("/api/intake/v1/client/:client/save/:save", w(Intake()))
+	router.PUT("/api/intake/v1/client/:client/save/:save", w(Intake(s3c, *cfg.S3Bucket)))
 	http.Handle("/", router)
 
 	logger.Info("starting intake service", zap.Uint16("port", cfg.HTTPPort))
@@ -41,13 +46,11 @@ func main() {
 }
 
 type Config struct {
-	LogDebug   bool    `mapstructure:"LOG_DEBUG"`
-	HTTPDebug  bool    `mapstructure:"HTTP_DEBUG"`
-	HTTPPort   uint16  `mapstructure:"HTTP_PORT"`
-	S3Endpoint *string `mapstructure:"S3_ENDPOINT"`
-	S3Key      *string `mapstructure:"S3_KEY"`
-	S3Secret   *string `mapstructure:"S3_SECRET"`
-	S3Bucket   *string `mapstructure:"S3_BUCKET" validate:"required"`
+	LogDebug  bool            `mapstructure:"LOG_DEBUG"`
+	HTTPDebug bool            `mapstructure:"HTTP_DEBUG"`
+	HTTPPort  uint16          `mapstructure:"HTTP_PORT"`
+	S3Bucket  *string         `mapstructure:"S3_BUCKET" validate:"required"`
+	S3Config  common.S3Config `mapstructure:",squash"`
 }
 
 func loadConfig() (*Config, error) {
