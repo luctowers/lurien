@@ -26,7 +26,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ github.repository_owner }}/lurien_intake
+          images: ghcr.io/${{ github.repository }}/intake
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
