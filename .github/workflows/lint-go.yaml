@@ -15,6 +15,10 @@ jobs:
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('./luclog-api/go.sum') }}
+      - name: Install go dependencies
+        working-directory: ./luclog-api
+        run: |
+          go install github.com/luctowers/lurien/common github.com/luctowers/lurien/intake
       - name: Install staticcheck
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@latest
