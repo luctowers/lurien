@@ -2,6 +2,8 @@ FROM --platform=$BUILDPLATFORM golang:1.20-alpine AS builder
 
 RUN apk update && apk add --no-cache git
 
+RUN adduser -u 10001 appuser
+
 WORKDIR /usr/src/app
 
 COPY intake ./intake
@@ -16,5 +18,7 @@ RUN go build -o /go/bin/intake github.com/luctowers/lurien/intake
 FROM scratch
 
 COPY --from=builder /go/bin/intake /go/bin/intake
+COPY --from=builder /etc/passwd /etc/passwd
+USER appuser
 
 ENTRYPOINT ["/go/bin/intake"]
