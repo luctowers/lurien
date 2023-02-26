@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/luctowers/lurien/intake/handler"
+	"github.com/luctowers/lurien/common"
 	"go.uber.org/zap"
 
 	"github.com/julienschmidt/httprouter"
@@ -21,10 +21,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	w := func(h handler.Handler) httprouter.Handle {
-		h = handler.LoggingMiddleware(h)
-		h = handler.StatusMiddleware(h, HttpDebug)
-		return handler.ToHTTPRouterHandle(h, logger)
+	w := func(h common.Handler) httprouter.Handle {
+		h = common.LoggingMiddleware(h)
+		h = common.StatusMiddleware(h, HttpDebug)
+		return common.ToHTTPRouterHandle(h, logger)
 	}
 
 	router := httprouter.New()
@@ -36,7 +36,7 @@ func main() {
 	}
 }
 
-func Intake() handler.Handler {
+func Intake() common.Handler {
 	return &intakeHandler{
 		// save format: name---ts.ext
 		saveExpr: regexp.MustCompile(`(.*)---([0-9]{4}-[0-9]{2}-[0-9]{2}--[0-9]{2}-[0-9]{2}-[0-9]{2})\.(.*)`),
@@ -50,7 +50,7 @@ type intakeHandler struct {
 	saveTsLayout string
 }
 
-func (h *intakeHandler) Handle(i handler.Input) (int, error) {
+func (h *intakeHandler) Handle(i common.Input) (int, error) {
 	client := i.Params.ByName("client")
 	save := i.Params.ByName("save")
 	agent := i.Request.Header.Get("User-Agent")
