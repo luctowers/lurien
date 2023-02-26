@@ -62,10 +62,14 @@ func (h statusHandler) Handle(i Input) (int, error) {
 func defaultHandlerResponse(w http.ResponseWriter, status int, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
+	var errstr string
+	if err != nil {
+		errstr = err.Error()
+	}
 	resbody := defaultResponseBody{
 		Status:     status,
 		StatusText: http.StatusText(status),
-		Error:      err.Error(),
+		Error:      errstr,
 	}
 	json.NewEncoder(w).Encode(resbody)
 }

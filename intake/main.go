@@ -1,29 +1,31 @@
 package main
 
 import (
-	"errors"
 	"log"
 	"net/http"
-	"regexp"
-	"time"
 
+	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/luctowers/lurien/common"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
 	"github.com/julienschmidt/httprouter"
 )
 
-const HttpDebug = true // TODO: this should not be true in production
-
 func main() {
-	logger, err := zap.NewProduction()
+	cfg, err := loadConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	logger, err := common.NewLogger(cfg.LogDebug)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	w := func(h common.Handler) httprouter.Handle {
 		h = common.LoggingMiddleware(h)
-		h = common.StatusMiddleware(h, HttpDebug)
+		h = common.StatusMiddleware(h, cfg.HTTPDebug)
 		return common.ToHTTPRouterHandle(h, logger)
 	}
 
@@ -36,54 +38,40 @@ func main() {
 	}
 }
 
-func Intake() common.Handler {
-	return &intakeHandler{
-		// save format: name---ts.ext
-		saveExpr: regexp.MustCompile(`(.*)---([0-9]{4}-[0-9]{2}-[0-9]{2}--[0-9]{2}-[0-9]{2}-[0-9]{2})\.(.*)`),
-		// ts layout: yyyy-mm-dd--hh-MM-ss
-		saveTsLayout: "2006-01-02--15-04-05",
-	}
+type Config struct {
+	LogDebug   bool    `mapstructure:"LOG_DEBUG"`
+	HTTPDebug  bool    `mapstructure:"HTTP_DEBUG"`
+	HTTPPort   bool    `mapstructure:"HTTP_PORT"`
+	S3Endpoint *string `mapstructure:"S3_ENDPOINT"`
+	S3Key      *string `mapstructure:"S3_KEY"`
+	S3Secret   *string `mapstructure:"S3_SECRET"`
+	S3Bucket   *string `mapstructure:"S3_BUCKET" validate:"required"`
 }
 
-type intakeHandler struct {
-	saveExpr     *regexp.Regexp
-	saveTsLayout string
-}
+func loadConfig() (*Config, error) {
+	cfg := &Config{}
+	v := viper.New()
+	common.AutoBindEnv(v, *cfg)
 
-func (h *intakeHandler) Handle(i common.Input) (int, error) {
-	client := i.Params.ByName("client")
-	save := i.Params.ByName("save")
-	agent := i.Request.Header.Get("User-Agent")
+	v.SetDefault("LOG_DEBUG", false)
+	v.SetDefault("HTTP_DEBUG", false)
+	v.SetDefault("HTTP_PORT", 80)
 
-	if agent != "lurien_client/1.0" {
-		i.Logger.Warn("unrecognized user-agent", zap.String("userAgent", agent))
-		return http.StatusBadRequest, errors.New("unrecognized user-agent")
-	}
-
-	if !isValidUUID(client) {
-		i.Logger.Warn("invalid client uuid", zap.String("clientId", client))
-		return http.StatusBadRequest, errors.New("invalid client id")
-	}
-
-	saveMatch := h.saveExpr.FindStringSubmatch(save)
-	if saveMatch == nil {
-		i.Logger.Warn("invalid save path format", zap.String("save", save))
-		return http.StatusBadRequest, errors.New("invalid save path format")
-	}
-	// saveName := saveMatch[1]
-	saveTs := saveMatch[2]
-	saveExt := saveMatch[3]
-
-	_, err := time.Parse(h.saveTsLayout, saveTs)
+	err := v.UnmarshalExact(cfg)
 	if err != nil {
-		i.Logger.Warn("failed to parse save time", zap.String("save", save), zap.String("saveTs", saveTs), zap.Error(err))
-		return http.StatusBadRequest, errors.New("failed to parse save time")
+		return nil, err
 	}
 
-	if saveExt != "dat" {
-		i.Logger.Warn("unrecognized save extension", zap.String("save", save), zap.String("saveExt", saveExt))
-		return http.StatusBadRequest, errors.New("unrecognized save extension")
+	validate := validator.New()
+	err = validate.Struct(cfg)
+	if err != nil {
+		return nil, err
 	}
 
-	return http.StatusOK, nil
+	return cfg, nil
+}
+
+func isValidUUID(u string) bool {
+	_, err := uuid.Parse(u)
+	return err == nil
 }
