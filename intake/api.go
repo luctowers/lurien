@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/luctowers/lurien/common"
 	"go.uber.org/zap"
 )
@@ -60,4 +61,9 @@ func (h *intakeHandler) Handle(i common.Input) (int, error) {
 	}
 
 	return http.StatusOK, nil
+}
+
+func isValidUUID(u string) bool {
+	_, err := uuid.Parse(u)
+	return err == nil
 }

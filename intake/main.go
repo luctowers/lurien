@@ -1,11 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"github.com/luctowers/lurien/common"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -32,16 +32,18 @@ func main() {
 	router := httprouter.New()
 	router.PUT("/api/intake/v1/client/:client/save/:save", w(Intake()))
 	http.Handle("/", router)
-	err = http.ListenAndServe(":8080", nil)
+
+	logger.Info("starting intake service", zap.Uint16("port", cfg.HTTPPort))
+	err = http.ListenAndServe(fmt.Sprintf(":%d", cfg.HTTPPort), nil)
 	if err != nil {
-		logger.Fatal("failed to listen on port", zap.Error(err))
+		logger.Fatal("failed to listen on port", zap.Error(err), zap.Uint16("port", cfg.HTTPPort))
 	}
 }
 
 type Config struct {
 	LogDebug   bool    `mapstructure:"LOG_DEBUG"`
 	HTTPDebug  bool    `mapstructure:"HTTP_DEBUG"`
-	HTTPPort   bool    `mapstructure:"HTTP_PORT"`
+	HTTPPort   uint16  `mapstructure:"HTTP_PORT"`
 	S3Endpoint *string `mapstructure:"S3_ENDPOINT"`
 	S3Key      *string `mapstructure:"S3_KEY"`
 	S3Secret   *string `mapstructure:"S3_SECRET"`
@@ -69,9 +71,4 @@ func loadConfig() (*Config, error) {
 	}
 
 	return cfg, nil
-}
-
-func isValidUUID(u string) bool {
-	_, err := uuid.Parse(u)
-	return err == nil
 }
