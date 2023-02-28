@@ -28,3 +28,32 @@ func ToHTTPRouterHandle(h Handler, l *zap.Logger) httprouter.Handle {
 		})
 	}
 }
+
+func ToHTTPHandler(handle httprouter.Handle) http.Handler {
+	return httpHandlerAdaptor{handle}
+}
+
+type httpHandlerAdaptor struct {
+	handle httprouter.Handle
+}
+
+func (h httpHandlerAdaptor) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	h.handle(w, req, nil)
+}
+
+func StaticStatus(status int) Handler {
+	return staticStatusHandler{status, nil}
+}
+
+func StaticStatusError(status int, err error) Handler {
+	return staticStatusHandler{status, err}
+}
+
+type staticStatusHandler struct {
+	status int
+	err    error
+}
+
+func (h staticStatusHandler) Handle(i Input) (int, error) {
+	return h.status, h.err
+}

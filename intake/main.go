@@ -28,6 +28,10 @@ func main() {
 		logger.Fatal("failed to configure s3 service", zap.Error(err))
 	}
 
+	clientOnly := func(h common.Handler) common.Handler {
+		return common.AgentFilterMiddleware(h, "lurien_client/1.0")
+	}
+
 	w := func(h common.Handler) httprouter.Handle {
 		h = common.LoggingMiddleware(h)
 		h = common.StatusMiddleware(h, cfg.HTTPDebug)
@@ -35,7 +39,11 @@ func main() {
 	}
 
 	router := httprouter.New()
-	router.PUT("/api/intake/v1/client/:client/save/:save", w(Intake(s3c, *cfg.S3Bucket)))
+	router.HandleMethodNotAllowed = false
+	router.NotFound = common.ToHTTPHandler(w(common.StaticStatus(http.StatusNotFound)))
+	router.GET("/health", w(common.StaticStatus(http.StatusOK)))
+	router.GET("/api/intake/v1/metadata", w(clientOnly(Metadata())))
+	router.PUT("/api/intake/v1/game/:game/client/:client/save/:save", w(clientOnly(Intake(s3c, *cfg.S3Bucket))))
 	http.Handle("/", router)
 
 	logger.Info("starting intake service", zap.Uint16("port", cfg.HTTPPort))

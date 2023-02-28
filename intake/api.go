@@ -14,6 +14,39 @@ import (
 	"go.uber.org/zap"
 )
 
+func Metadata() common.Handler {
+	return &metadataHandler{}
+}
+
+type metadataHandler struct{}
+
+func (h *metadataHandler) Handle(i common.Input) (int, error) {
+	i.Response.Header().Set("Content-Type", "application/json")
+	i.Response.Write([]byte(`{
+		"games": {
+			"hollowknight": {
+				"maximumSaveSize": 400000,
+				"includeSaves": [
+
+				],
+				"excludeSaves": [
+
+				]
+			},
+			"silksong": {
+				"maximumSaveSize": 10000000,
+				"includeSaves": [
+
+				],
+				"excludeSaves": [
+					
+				]
+			}
+		}
+	}`))
+	return http.StatusOK, nil
+}
+
 func Intake(s3c *s3.Client, s3bucket string) common.Handler {
 	return &intakeHandler{
 		s3c:      s3c,
@@ -33,15 +66,10 @@ type intakeHandler struct {
 }
 
 func (h *intakeHandler) Handle(i common.Input) (int, error) {
-	save := i.Params.ByName("save")
+	game := i.Params.ByName("game")
 	client := i.Params.ByName("client")
+	save := i.Params.ByName("save")
 	saveSize := i.Request.ContentLength
-	agent := i.Request.UserAgent()
-
-	if agent != "lurien_client/1.0" {
-		i.Logger.Warn("unrecognized user-agent", zap.String("userAgent", agent))
-		return http.StatusBadRequest, errors.New("unrecognized user-agent")
-	}
 
 	if saveSize == 0 {
 		return http.StatusBadRequest, errors.New("content length zero is not allowed")
@@ -53,6 +81,11 @@ func (h *intakeHandler) Handle(i common.Input) (int, error) {
 	if saveSize > 10_000_000 {
 		i.Logger.Warn("save size exceeds maximum", zap.Int64("saveSize", saveSize))
 		return http.StatusRequestEntityTooLarge, errors.New("save size exceeds maximum")
+	}
+
+	if game != "silksong" && game != "hollowknight" {
+		i.Logger.Warn("unrecognized game", zap.String("game", game))
+		return http.StatusBadRequest, errors.New("unrecognized game")
 	}
 
 	if !isValidUUID(client) {
@@ -83,7 +116,7 @@ func (h *intakeHandler) Handle(i common.Input) (int, error) {
 	// TODO: is this even needed since we checked content length???
 	saveBody := http.MaxBytesReader(i.Response, i.Request.Body, i.Request.ContentLength)
 
-	s3key := fmt.Sprintf("client=%s/%s", client, save)
+	s3key := fmt.Sprintf("game=%s/client=%s/%s", game, client, save)
 	_, err = h.s3c.PutObject(i.Request.Context(), &s3.PutObjectInput{
 		Bucket:        &h.s3bucket,
 		Key:           &s3key,
