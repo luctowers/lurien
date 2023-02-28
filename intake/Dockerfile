@@ -1,6 +1,6 @@
 FROM --platform=$BUILDPLATFORM golang:1.20-alpine AS builder
 
-RUN apk update && apk add --no-cache git
+RUN apk update && apk add --no-cache git ca-certificates && update-ca-certificates
 
 RUN adduser -D -u 10001 appuser
 
@@ -22,6 +22,7 @@ RUN go build -ldflags="-w -s" -o /go/bin/intake github.com/luctowers/lurien/inta
 
 FROM scratch
 
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /go/bin/intake /go/bin/intake
 COPY --from=builder /etc/passwd /etc/passwd
 USER appuser

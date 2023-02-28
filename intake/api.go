@@ -122,6 +122,8 @@ func (h *intakeHandler) Handle(i common.Input) (int, error) {
 		Key:           &s3key,
 		Body:          saveBody,
 		ContentLength: saveSize,
+	}, func(o *s3.Options) {
+		o.RetryMaxAttempts = 1
 	}, s3.WithAPIOptions(v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware))
 	if err != nil {
 		i.Logger.Error("failed to upload to s3", zap.Error(err))
