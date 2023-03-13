@@ -1,6 +1,7 @@
 import os, platform, subprocess, shutil, json, uuid, re, secrets
 from datetime import datetime
 import tkinter as tk
+from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 
 
@@ -67,8 +68,8 @@ class AgreementPopup(tk.Toplevel):
         text.insert("end", USER_CONSENT_TEXT)
         text.config(state="disabled")
         text.pack()
-        button = tk.Button(self, text=AGREE_BUTTON_TEXT)
-        button.pack(fill="x")
+        button = ttk.Button(self, text=AGREE_BUTTON_TEXT, padding=5)
+        button.pack(padx=5, pady=5)
         def agree():
             agree_callback()
             self.destroy()
