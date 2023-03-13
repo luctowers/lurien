@@ -70,6 +70,7 @@ class AgreementPopup(tk.Toplevel):
         text.pack()
         button = ttk.Button(self, text=AGREE_BUTTON_TEXT, padding=5)
         button.pack(padx=5, pady=5)
+        self.bell()
         def agree():
             agree_callback()
             self.destroy()
