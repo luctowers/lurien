@@ -1,4 +1,4 @@
-import os, platform, subprocess, shutil, json, uuid, re, secrets, threading, queue
+import os, platform, subprocess, shutil, json, uuid, re, secrets, threading, queue, tempfile
 import queue, time
 from datetime import datetime
 import tkinter as tk
@@ -46,8 +46,11 @@ class App(tk.Tk):
         super().__init__()
         self.title("Project Lurien")
         self.layout()
-        self.ensure_user_consent()
         self.state = PeristentState()
+        if not self.state.data["consent"]:
+            self.ensure_user_consent()
+        else:
+            self.start_worker()
 
     def layout(self):
         self.log_text = ScrolledText(self, padx=4, pady=4, wrap="word")
@@ -55,7 +58,7 @@ class App(tk.Tk):
         self.log_text.pack()
     
     def ensure_user_consent(self):
-        consent_popup = AgreementPopup(
+        AgreementPopup(
             self,
             agree_callback=lambda: self.receive_user_consent(),
             decline_callback=lambda: self.destroy()
@@ -63,9 +66,19 @@ class App(tk.Tk):
         self.withdraw()
     
     def receive_user_consent(self):
+        self.state.data["consent"] = True
+        self.state.save()
         self.deiconify()
+        self.start_worker()
+    
+    def start_worker(self):
         self.queue = queue.Queue()
-        worker_thread = threading.Thread(target=Worker(self.state, self.queue))
+        exit_event = threading.Event()
+        def exit():
+            exit_event.set()
+            self.destroy()
+        self.protocol("WM_DELETE_WINDOW", exit)
+        worker_thread = threading.Thread(target=Worker(self.state, self.queue, exit_event))
         worker_thread.start()
         self.poll()
     
@@ -104,12 +117,15 @@ class AgreementPopup(tk.Toplevel):
         button.pack(padx=5, pady=5)
         self.bell()
         def agree():
-            agree_callback()
             self.destroy()
+            agree_callback()
+        def decline():
+            self.destroy()
+            decline_callback()
         if agree_callback is not None:
             button.config(command=agree)
         if decline_callback is not None:
-            self.protocol("WM_DELETE_WINDOW", decline_callback)
+            self.protocol("WM_DELETE_WINDOW", decline)
 
 
 
@@ -129,9 +145,11 @@ class PeristentState:
         self.boostrap()
     
     def boostrap(self):
-        self.state = self.read()
-        if self.state is None:
-            self.state = {
+        self.data = self.read()
+        if self.data is None:
+            self.data = {
+                "version": 1,
+                "consent": False,
                 "clientId": str(uuid.uuid4()),
                 "clientSecret": secrets.token_urlsafe(32)
             }
@@ -145,8 +163,9 @@ class PeristentState:
             return None
 
     def save(self):
-        with open(self.path, "w") as file:
-            json.dump(self.state, file, indent="\t")
+        with tempfile.NamedTemporaryFile("w", delete=False) as file:
+            json.dump(self.data, file, indent="\t")
+        os.rename(file.name, self.path)
 
 
 
@@ -156,19 +175,42 @@ class PeristentState:
 
 class Worker:
 
-    def __init__(self, state, queue):
+    def __init__(self, state: PeristentState, queue: queue.Queue, exit_event: threading.Event):
         self.state = state
         self.queue = queue
+        self.exit_event = exit_event
         self.n = 0
 
     def __call__(self):
         self.run()
 
     def run(self):
+        self.log("lurien is watching...")
         while True:
             self.n += 1
-            time.sleep(0.5)
-            self.queue.put("yo%d" % self.n)
+            self.log("yo%d" % self.n)
+            if self.exit_event.wait(5):
+                return
+    
+    def log(self, message):
+        self.queue.put(message)
+
+
+
+# API METHODS
+
+def api_register(client_id, client_secret):
+    print("API REGSITER id=%s secret=%s" % (client_id, client_secret))
+
+def api_upload_save(client_id, client_secret, path, name):
+    print("API UPLOAD id=%s secret=%s path=%s name=%s" % (client_id, client_secret, path, name))
+
+def api_submit_survey(client_id, client_secret, survey):
+    print("API UPLOAD id=%s secret=%s survey=%r" % (client_id, client_secret, survey))
+
+def api_get_metadata():
+    print("API GET METDATA")
+    return {}
 
 
 
