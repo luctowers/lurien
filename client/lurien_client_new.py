@@ -210,7 +210,26 @@ def api_submit_survey(client_id, client_secret, survey):
 
 def api_get_metadata():
     print("API GET METDATA")
-    return {}
+    return {
+        "games": {
+            "hollowknight": {
+                "include": [
+                    r".*\.dat"
+                ],
+                "exclude": [
+                    r".+_[0-9]+(\.[0-9]+)+\.dat"
+                ]
+            },
+            "silksong": {
+                "include": [
+                    r".*\.dat"
+                ],
+                "exclude": [
+                    r".+_[0-9]+(\.[0-9]+)+\.dat"
+                ]
+            }
+        }
+    }
 
 
 
