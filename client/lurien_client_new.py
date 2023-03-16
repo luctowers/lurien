@@ -214,7 +214,7 @@ def api_get_metadata():
         "games": {
             "hollowknight": {
                 "include": [
-                    r".*\.dat"
+                    r".+\.dat"
                 ],
                 "exclude": [
                     r".+_[0-9]+(\.[0-9]+)+\.dat"
@@ -222,7 +222,7 @@ def api_get_metadata():
             },
             "silksong": {
                 "include": [
-                    r".*\.dat"
+                    r".+\.dat"
                 ],
                 "exclude": [
                     r".+_[0-9]+(\.[0-9]+)+\.dat"
