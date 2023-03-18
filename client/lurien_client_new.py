@@ -52,6 +52,8 @@ class App(tk.Tk):
             self.ensure_user_consent()
         elif self.register():
             self.start_worker()
+        else:
+            self.destroy()
 
     def layout(self):
         self.log_text = ScrolledText(self, padx=4, pady=4, wrap="word")
@@ -72,6 +74,8 @@ class App(tk.Tk):
         if self.register():
             self.deiconify()
             self.start_worker()
+        else:
+            self.destroy()
     
     def register(self):
         try:
