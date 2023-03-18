@@ -2,8 +2,9 @@ import os, platform, subprocess, shutil, json, uuid, re, secrets, threading, que
 import queue, time
 from datetime import datetime
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from tkinter.scrolledtext import ScrolledText
+import traceback
 
 
 
@@ -49,7 +50,7 @@ class App(tk.Tk):
         self.state = PeristentState()
         if not self.state.data["consent"]:
             self.ensure_user_consent()
-        else:
+        elif self.register():
             self.start_worker()
 
     def layout(self):
@@ -68,9 +69,19 @@ class App(tk.Tk):
     def receive_user_consent(self):
         self.state.data["consent"] = True
         self.state.save()
-        self.deiconify()
-        self.start_worker()
+        if self.register():
+            self.deiconify()
+            self.start_worker()
     
+    def register(self):
+        try:
+            api_register(self.state.data["clientId"], self.state.data["clientSecret"])
+            return True
+        except Exception as e:
+            self.withdraw()
+            messagebox.showerror("Registration Exception", "Failed to register client: " + str(e))
+            return False
+
     def start_worker(self):
         self.queue = queue.Queue()
         exit_event = threading.Event()
@@ -165,7 +176,7 @@ class PeristentState:
     def save(self):
         with tempfile.NamedTemporaryFile("w", delete=False) as file:
             json.dump(self.data, file, indent="\t")
-        os.rename(file.name, self.path)
+        os.replace(file.name, self.path)
 
 
 
